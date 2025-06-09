@@ -1,7 +1,5 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 from datetime import datetime
-import firebase_admin
-from firebase_admin import credentials, firestore
 from bot.btc_bot import trading_job
 
 def start_scheduler():

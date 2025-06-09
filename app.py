@@ -1,6 +1,7 @@
 from datetime import datetime
 import hashlib
 import hmac
+import os
 import time
 from flask import Flask, render_template, session
 from functools import wraps
@@ -12,7 +13,7 @@ from bot.jobs import start_scheduler
 from bot.btc_bot import DEFAULT_LEVERAGE
 
 app = Flask(__name__)
-app.secret_key = "tu_clave_secreta_super_segura"  # Cambia esto a algo secreto y seguro
+app.secret_key = os.environ.get('SECRET_KEY', 'clave_de_fallback_para_dev')
 
 # Inicializa Firebase
 if not firebase_admin._apps:
