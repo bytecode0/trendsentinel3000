@@ -5,3 +5,4 @@ apscheduler
 backtesting
 pandas
 ta
+python-telegram-bot==20.0

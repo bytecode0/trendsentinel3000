@@ -67,9 +67,8 @@
 
     <div class="container mt-5">
         <div class="relative w-full h-64 mb-4">
-
-            <div class="container mt-4">
-                <canvas id="equityChart" height="100"></canvas>
+            <div class="card card-btc text-dark-gray shadow">
+                <canvas id="equityChart" height="260"></canvas>
             </div>
           </div>
         <div class="row g-4">
@@ -112,64 +111,115 @@
             </div>
         </div>
 
-        <div class="table-responsive mt-4">
-            <table class="table table-bordered table-hover align-middle text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="brand-orange">Symbol</th>
-                        <th class="brand-orange">Operation Type</th>
-                        <th class="brand-orange">Entry Price</th>
-                        <th class="brand-orange">Entry Time</th>
-                        <th class="brand-orange">Margin</th>
-                        <th class="brand-orange">📈 Unrealized PnL</th>
-                        <th class="brand-orange">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for trade in trades %}
-                    <tr class="{% if trade.status == 'CLOSED' %}table-secondary{% elif trade.status == 'OPEN' %}table-success{% endif %}">
-                        <td>{{ trade.symbol }}</td>
-                        <td>
-                            {% if trade.operation_type == 'LONG' %}
-                                <span class="badge bg-success text-white px-3 py-2">
-                                    📈 LONG
-                                </span>
-                            {% elif trade.operation_type == 'SHORT' %}
-                                <span class="badge bg-danger text-white px-3 py-2">
-                                    📉 SHORT
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary text-white px-3 py-2">
-                                    {{ trade.operation_type }}
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td>{{ "{:,.2f}".format(trade.entry_price) }}</td>
-                        <td>{{ trade.entry_time }}</td>
-                        <td>${{ trade.margin or '-' }}</td>
-                        <td>
-                            {% if trade.pnl_usdt is not none and trade.pnl_pct is not none %}
-                                <span class="fw-bold {% if trade.pnl_usdt >= 0 %}text-success{% else %}text-danger{% endif %}">
-                                    ${{ "{:,.2f}".format(trade.pnl_usdt) }} ({{ "{:,.2f}".format(trade.pnl_pct * default_leverage) }}%)
-                                </span>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if trade.status == 'OPEN' %}
-                                <span class="text-success status-icon" data-bs-toggle="tooltip" title="Open">🟢</span>
-                            {% else %}
-                                <span class="text-gray status-icon" data-bs-toggle="tooltip" title="Closed">⚪</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>        
+        <!-- Añade esto dentro del contenedor donde quieras mostrar las tabs -->
+<div class="mt-4">
+    <ul class="nav nav-tabs mt-4" id="tradesTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="positions-tab" data-bs-toggle="tab" data-bs-target="#positions" type="button" role="tab">📊 Positions</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">📜 History</button>
+        </li>
+    </ul>
 
+    <div class="tab-content pt-3" id="tradeTabsContent">
+        <!-- Positions Tab -->
+        <div class="tab-pane fade show active" id="positions" role="tabpanel" aria-labelledby="positions-tab">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="brand-orange">Symbol</th>
+                            <th class="brand-orange">Operation Type</th>
+                            <th class="brand-orange">Entry Price</th>
+                            <th class="brand-orange">Entry Time</th>
+                            <th class="brand-orange">Margin</th>
+                            <th class="brand-orange">📈 Unrealized PnL</th>
+                            <th class="brand-orange">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in trades if trade.status == 'OPEN' %}
+                        <tr class="table-success">
+                            <td>{{ trade.symbol }}</td>
+                            <td>
+                                {% if trade.operation_type == 'LONG' %}
+                                    <span class="badge bg-success text-white px-3 py-2">📈 LONG</span>
+                                {% elif trade.operation_type == 'SHORT' %}
+                                    <span class="badge bg-danger text-white px-3 py-2">📉 SHORT</span>
+                                {% else %}
+                                    <span class="badge bg-secondary text-white px-3 py-2">{{ trade.operation_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ "{:,.2f}".format(trade.entry_price) }}</td>
+                            <td>{{ trade.entry_time }}</td>
+                            <td>${{ trade.margin or '-' }}</td>
+                            <td>
+                                {% if trade.pnl_usdt is not none and trade.pnl_pct is not none %}
+                                    <span class="fw-bold {% if trade.pnl_usdt >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        ${{ "{:,.2f}".format(trade.pnl_usdt) }} ({{ "{:,.2f}".format(trade.pnl_pct * default_leverage) }}%)
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td><span class="text-success status-icon" title="Open">🟢</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="brand-orange">Symbol</th>
+                            <th class="brand-orange">Operation Type</th>
+                            <th class="brand-orange">Entry Price</th>
+                            <th class="brand-orange">Entry Time</th>
+                            <th class="brand-orange">Margin</th>
+                            <th class="brand-orange">📈 Unrealized PnL</th>
+                            <th class="brand-orange">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in trades if trade.status == 'CLOSED' %}
+                        <tr class="table-secondary">
+                            <td>{{ trade.symbol }}</td>
+                            <td>
+                                {% if trade.operation_type == 'LONG' %}
+                                    <span class="badge bg-success text-white px-3 py-2">📈 LONG</span>
+                                {% elif trade.operation_type == 'SHORT' %}
+                                    <span class="badge bg-danger text-white px-3 py-2">📉 SHORT</span>
+                                {% else %}
+                                    <span class="badge bg-secondary text-white px-3 py-2">{{ trade.operation_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ "{:,.2f}".format(trade.entry_price) }}</td>
+                            <td>{{ trade.entry_time }}</td>
+                            <td>${{ trade.margin or '-' }}</td>
+                            <td>
+                                {% if trade.pnl_usdt is not none and trade.pnl_pct is not none %}
+                                    <span class="fw-bold {% if trade.pnl_usdt >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        ${{ "{:,.2f}".format(trade.pnl_usdt) }} ({{ "{:,.2f}".format(trade.pnl_pct * default_leverage) }}%)
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td><span class="text-gray status-icon" title="Closed">⚪</span></td>
+                        </tr>
+                                {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
+</div>
 
     <script>
         const equityHistory = {{ equity_history | tojson }};
