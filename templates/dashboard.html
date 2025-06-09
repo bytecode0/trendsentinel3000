@@ -55,8 +55,9 @@
 <body class="text-dark">
 
     <nav class="navbar navbar-expand-lg navbar-dark px-4">
-        <a class="navbar-brand fw-bold" href="#">
-            🚀 <span class="brand-orange">TrendSentinel3000</span>
+        <a class="navbar-brand fw-bold align-items-center" href="#" >
+            <img src="{{ url_for('static', filename='img/logo_transparent.png') }}" alt="Logo" height="35" class="me-2">
+            <span class="brand-orange">CryptoAutomaticTrader</span>
         </a>
         <div class="ms-auto d-flex align-items-center">
             <span class="me-3 text-white">👤 {{ user }}</span>
@@ -65,8 +66,6 @@
     </nav>
 
     <div class="container mt-5">
-        <h2 class="mb-4">📊 Trade Dashboard</h2>
-        
         <div class="relative w-full h-64 mb-4">
 
             <div class="container mt-4">
@@ -180,11 +179,18 @@
             id: 'equityLabel',
             afterDraw(chart) {
                 const { ctx } = chart;
-                const equityText = '${{ balance_total }}'; // Este valor lo inyecta Flask
+                const rawBalance = {{ balance_total | safe }}; // Inyectado como número (sin $ ni formato)
+                const formatteeEquity = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2
+                }).format(rawBalance);
                 ctx.save();
-                ctx.font = 'bold 20px Arial';
-                ctx.fillStyle = '#111'; // Color del texto
-                ctx.fillText(equityText, 20, 30); // X = 20px, Y = 30px desde arriba
+                ctx.font = '36px "Segoe UI", "Helvetica Neue", sans-serif';
+                ctx.fillStyle = chart.data.datasets[0].borderColor || '#36a2eb';
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(formatteeEquity, 25, 45); // X = 20px, Y = 30px desde arriba
                 ctx.restore();
             }
         };
@@ -197,7 +203,8 @@
                 datasets: [{
                     label: 'Equity total',
                     data: data,
-                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderColor: '#f7931a',
+                    backgroundColor: 'rgba(247, 147, 26, 0.1)',
                     borderWidth: 2,
                     fill: false
                 }]
@@ -218,7 +225,11 @@
                         display: false // Oculta etiquetas del eje X
                     },
                     y: {
-                        display: true,
+                        grid : {
+                            display: false,
+                            drawBorder: false,
+                        },
+                        display: false,
                         ticks: {
                             display: false,
                         },

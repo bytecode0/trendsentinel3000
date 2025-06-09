@@ -8,8 +8,8 @@ from firebase_admin import credentials, firestore, initialize_app
 import firebase_admin
 from flask import session, request, redirect, url_for, flash
 import requests
-
-from trendsentinel3000 import DEFAULT_LEVERAGE
+from bot.jobs import start_scheduler
+from bot.btc_bot import DEFAULT_LEVERAGE
 
 app = Flask(__name__)
 app.secret_key = "tu_clave_secreta_super_segura"  # Cambia esto a algo secreto y seguro
@@ -240,5 +240,8 @@ def get_equity_history_with_latest(api_key, api_secret, user_email):
 
     return equity_data
 
-if __name__ == "__main__":
+def run_admin_panel():
     app.run(debug=True)
+
+if __name__ == "__main__":
+    run_admin_panel()

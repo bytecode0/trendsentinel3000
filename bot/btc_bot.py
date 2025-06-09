@@ -1,4 +1,4 @@
-from apscheduler.schedulers.blocking import BlockingScheduler
+
 from firebase_admin import credentials, firestore
 from backtesting.lib import crossover
 import pandas as pd
@@ -27,6 +27,7 @@ API_KEY = "IzN46jpMWJFVDYNMeP"
 API_SECRET = "g5aZ0qHaD8zK3K4ogCwXOg7Rl8QofQimCt7f"
 BASE_URL = "https://api-demo.bybit.com"
 
+db = None
 
 def get_usdt_available_balance():
     timestamp = str(int(time.time() * 1000))
@@ -62,6 +63,41 @@ def get_usdt_available_balance():
             available_balance = wallet_balance - used_margin
             return available_balance
     return 0.0  # Si no se encuentra USDT
+
+def get_account_equity():
+    timestamp = str(int(time.time() * 1000))
+    recv_window = "5000"
+    endpoint = "/v5/account/wallet-balance"
+    params = "accountType=UNIFIED"  # Cambia a 'CONTRACT' si aplica
+
+    to_sign = f"{timestamp}{API_KEY}{recv_window}{params}"
+    signature = hmac.new(
+        bytes(API_SECRET, "utf-8"),
+        to_sign.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    headers = {
+        "X-BAPI-API-KEY": API_KEY,
+        "X-BAPI-SIGN": signature,
+        "X-BAPI-TIMESTAMP": timestamp,
+        "X-BAPI-RECV-WINDOW": recv_window,
+        "Content-Type": "application/json"
+    }
+
+    url = f"{BASE_URL}{endpoint}?{params}"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        raise Exception(f"API error: {response.text}")
+
+    data = response.json()
+    coins = data["result"]["list"][0]["coin"]
+    for coin in coins:
+        if coin["coin"] == "USDT":
+            equity = float(coin["equity"])
+            return equity
+    return 0.0
 
 def generate_signature(api_key, api_secret, timestamp, recv_window, body_str):
     to_sign = f"{timestamp}{api_key}{recv_window}{body_str}"
@@ -278,6 +314,20 @@ def open_trade(user_id, signal_data):
         order_type="Market"
     )
 
+def record_equity(user_id, equity, btc_price):
+    current = datetime.utcnow()
+    equity_history_ref = db.collection("users").document(user_id).collection("equity_history")
+
+    data = {
+        "timestamp": current.isoformat(),
+        "equity": equity,
+        "btc_price": btc_price,
+    }
+
+    # Usamos el timestamp como ID del documento
+    doc_id = current.strftime("%Y%m%d%H%M")
+    equity_history_ref.document(doc_id).set(data)
+
 def close_open_trade(user_id, current_price):
     trades_ref = db.collection("users").document(user_id).collection("trades").where("status", "==", "OPEN")
     open_trades = trades_ref.stream()
@@ -340,13 +390,33 @@ def get_user(user_id):
         print(f"Usuario {user_id} no encontrado.")
         return None
 
+def get_current_price(symbol):
+    from pybit.unified_trading import HTTP
+
+    # Crea una sesión con testnet=False si estás usando el entorno real
+    session = HTTP(testnet=False)
+
+    # Obtener el precio actual de BTCUSDT en el mercado de perpetuos (linear)
+    response = session.get_tickers(
+        category="linear",
+        symbol=symbol
+    )
+
+    # Extraer el precio
+    price = float(response["result"]["list"][0]["lastPrice"])
+    print(f"Precio actual BTCUSDT: {price}")
+    return price
+
 # Ejecutar el bot una vez cada 4 horas
 def trading_job():
+    init_firestore()
+
     users = db.collection("users").stream()
     for user in users:
         user_data = user.to_dict()
         user_id = user.id
         print(f"Processing user {user_id} with email {user_data.get('email', 'N/A')}")
+        
         config = get_bot_config(user_id)
         if config:
             print(f"User {user_id} config: {config}")
@@ -366,6 +436,10 @@ def trading_job():
 
         usdt_balance = get_usdt_available_balance()
         print(f"Available USDT balance: {usdt_balance}")
+
+        current_price = get_current_price("BTCUSDT")
+        equity = get_account_equity()
+        record_equity(user_id, equity, current_price)
         
         if signal:
             print(f"[{datetime.utcnow()}] Signal: {signal} entry price {signal['entry_price']}")
@@ -397,15 +471,9 @@ def trading_job():
         else:
             print(f"[{datetime.utcnow()}] No signal detected.")
 
-if __name__ == "__main__":
-    # Inicializa Firebase solo una vez
+def init_firestore():
+    global db
     if not firebase_admin._apps:
-        cred = credentials.Certificate("trendsentinelbitcoin-firebase-adminsdk-fbsvc-a11c5f2129.json")
+        cred = credentials.Certificate("trendsentinel3000/trendsentinel3000/trendsentinel3000-firebase-adminsdk.json")
         firebase_admin.initialize_app(cred)
-
     db = firestore.client()
-    
-    # Ejecuta la función `trading_job` cada 1 hora
-    scheduler = BlockingScheduler()
-    scheduler.add_job(trading_job, 'interval', hours=1, next_run_time=datetime.now())
-    scheduler.start()
