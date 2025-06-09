@@ -243,5 +243,5 @@ def get_equity_history_with_latest(api_key, api_secret, user_email):
 def run_admin_panel():
     app.run(debug=False)
 
-if __name__ == "__main__":
-    run_admin_panel()
+#if __name__ == "__main__":
+#    run_admin_panel()
