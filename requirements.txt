@@ -1,0 +1,7 @@
+Flask
+firebase-admin
+requests
+apscheduler
+backtesting
+pandas
+ta
